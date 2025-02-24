@@ -56,12 +56,14 @@ void loop(){//Här under initierar jag sensorn så att den söker av
   Serial.println(distance);
   
 
+// Startar en if-loop som känner av HEX-koderna från IRremoten. Håller man in en knapp på fjärrkontrollen så blir det först ett HEX värde, sen 0xFFFFFFF. Därför lagrar jag värdena i key.value. På detta sätt så blir 0xFFFFFFF till seanast tryckte HEX-värde. 
   if (irrecv.decode(&results)){
     if (results.value == 0xFFFFFFFF){
       results.value = key_value;
       // Serial.println(results.value, HEX); //Felsökning HEX-koder
     }
 
+//Initierar en switch-sats som känner av en HEX-kod som styr selfDrive.
     switch(results.value){
       case 0xFF02FD: //selfdrive
       selfDriveCount += 1;
@@ -69,28 +71,28 @@ void loop(){//Här under initierar jag sensorn så att den söker av
       Serial.println(selfDriveCount); 
       break;
     }
-
+//Om selfDrive är avstängt så kan man styra bilen manuellt med fjärrkontrollen. Pga H-bryggan så finns det fyra motorPin till två motorer. Är pin1 hög och pin 2 låg åker motor 1 framåt.
     if (selfdrive == false){
       switch(results.value){
-        case 0xFF629D: //framåt
+        case 0xFF629D: //Framåt
           digitalWrite(motorPin1, HIGH);  
           digitalWrite(motorPin2, LOW); 
           digitalWrite(motorPin3, LOW); 
           digitalWrite(motorPin4, HIGH); 
           break; 
-        case 0xFFA857: //bakåt
+        case 0xFFA857: //Bakåt
           digitalWrite(motorPin1, LOW);  
           digitalWrite(motorPin2, HIGH); 
           digitalWrite(motorPin3, HIGH); 
           digitalWrite(motorPin4, LOW); 
           break; 
-        case 0xFFC23D: //höger
+        case 0xFFC23D: //Höger
           digitalWrite(motorPin1, LOW);  
           digitalWrite(motorPin2, HIGH); 
           digitalWrite(motorPin3, LOW); 
           digitalWrite(motorPin4, HIGH); 
           break;
-        case 0xFF22DD: //vänster
+        case 0xFF22DD: //Vänster
           digitalWrite(motorPin1, HIGH);  
           digitalWrite(motorPin2, LOW); 
           digitalWrite(motorPin3, HIGH); 
@@ -103,6 +105,7 @@ void loop(){//Här under initierar jag sensorn så att den söker av
     irrecv.resume(); 
   }
   else{
+   // Om inga HEX-koder tas emot så ska alla motorer vara av.
    digitalWrite(motorPin1, LOW);  
    digitalWrite(motorPin2, LOW); 
    digitalWrite(motorPin3, LOW); 
@@ -111,32 +114,35 @@ void loop(){//Här under initierar jag sensorn så att den söker av
 
   delay(250);
 
+  //If-loop som sätter på selfDrive om selfDrivecount är större eller lika med 3 och selfdrive är false. Tämnder även en lampa så det ska vara tydligare när selfdrive är på.
   if (selfDriveCount >= 3 && selfdrive == false){
       selfdrive = true;
       selfDriveCount = 0;
       digitalWrite(ledPin, HIGH);
   }
+  //Samma princip som if-loopen över, fast den stänger av selfdrive. I denna behöver selfDriveCount bara nå 2, då signalerna blockerades av delayerna som finns i selfDrive algoritmen.
   else if(selfDriveCount >= 2 && selfdrive == true){
       selfdrive = false;
       selfDriveCount = 0;
       digitalWrite(ledPin, LOW);
   }
   
+  //Självkörning. Använder avståndsvariablen för att känna av om vägen är fri.
   if (selfdrive == true){
     if (distance >= 50){
-      digitalWrite(motorPin2, LOW); 
+      digitalWrite(motorPin2, LOW);  //Framåt
       digitalWrite(motorPin3, LOW); 
       digitalWrite(motorPin4, HIGH); 
       digitalWrite(motorPin1, HIGH); 
       delay(1000);
     }
     else{
-       digitalWrite(motorPin1, LOW);  
+       digitalWrite(motorPin1, LOW);  //Bakåt
        digitalWrite(motorPin2, HIGH); 
        digitalWrite(motorPin3, HIGH); 
        digitalWrite(motorPin4, LOW); 
        delay(1000);
-       digitalWrite(motorPin1, LOW);  
+       digitalWrite(motorPin1, LOW);  //Höger
        digitalWrite(motorPin2, HIGH); 
        digitalWrite(motorPin3, LOW); 
        digitalWrite(motorPin4, HIGH);
